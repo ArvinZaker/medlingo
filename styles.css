@@ -578,7 +578,7 @@ footer p + p {
   margin-top: .5rem;
 }
 
-/* Full-screen patient view. The source stays after the phrase, never in the toolbar. */
+/* Full-screen study view. The source stays after the phrase, never in the toolbar. */
 dialog {
   width: 100%;
   height: 100%;
@@ -920,6 +920,10 @@ body:has(dialog[open]) {
 /* Preserve the existing chart rendering and paired chart/table interaction. */
 .about > p {
   text-align: center;
+}
+
+.about > p + p {
+  margin-top: .75rem;
 }
 
 .authors {

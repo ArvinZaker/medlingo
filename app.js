@@ -4,6 +4,7 @@ const $ = id => document.getElementById(id);
 const formatCount = value => value.toLocaleString('en');
 const authorNames = [
   'Dr. Karanvir Gill',
+  'Dheyaa Al Najafi',
   'Arvin Zaker',
   'Dr. Bipandeep Singh Biran (UBC Orthopedic Surgery Resident)',
   'Dr. Arshbir Aulakh (UBC ENT Resident)',
@@ -267,7 +268,7 @@ async function render(focusHeading = false) {
     $('language-home').after($('language-control'));
   }
   $('language-control').hidden = false;
-  document.querySelector('.language-label').textContent = 'Patient language';
+  document.querySelector('.language-label').textContent = 'Language';
   if (state.page === 'search') phraseQuery = state.q;
   const version = ++renderVersion;
   const code = language;
@@ -294,7 +295,7 @@ async function render(focusHeading = false) {
   $('language-control').hidden = !showSearch;
   $('page-heading').hidden = false;
   if ($('search').value !== phraseQuery) $('search').value = phraseQuery;
-  $('page-heading').textContent = home ? 'mdlingo' : searching ? 'Search results'
+  $('page-heading').textContent = home ? 'medlingo' : searching ? 'Search results'
     : state.page === 'about' ? 'About us'
     : state.page === 'sources' ? 'Sources' : state.area?.title || 'Page not found';
   $('results').setAttribute('role', 'region');
@@ -327,7 +328,7 @@ async function render(focusHeading = false) {
     const hits = searching ? selected.phrases.slice(0, 200) : selected.phrases;
     if (searching && selected.fallback && total) {
       fragment.append(line('fallback-notice',
-        'No mdlingo match. Showing results from other sources.'));
+        'No medlingo match. Showing results from other sources.'));
     }
     $('count').textContent = `${formatCount(total)} phrase${total === 1 ? '' : 's'}${
       searching && total > 200 ? ' · Showing the first 200. Refine your search to see more.' : ''
@@ -476,7 +477,12 @@ function aboutPage() {
     name: item.title, count: data.specialty_counts[item.id] || 0,
   })).filter(item => item.count);
   const phrases = Object.values(data.specialty_counts).reduce((total, count) => total + count, 0);
-  section.append(line('', `We made mdlingo so clinicians can learn simple instructions and questions in their patients' languages, and use them without waiting for an interpreter. Search a phrase, show the translation on the screen, and use the pronunciation to practice saying it. The Quiz tab tests you on the phrases. There are ${formatCount(phrases)} phrases across ${formatCount(specialties.length)} specialties in ${formatCount(availableLanguages.length)} languages.`));
+  const languageNames = availableLanguages.map(item => item.name).join(', ');
+  section.append(
+    line('', `medlingo is a language-learning tool for clinicians, built around medical phrases for speaking with patients in their own language. It is for students and clinicians who speak English or do not know the exact clinical terminology in another language.`),
+    line('', `Pick a language, browse clinical areas, or search in English, translation or pronunciation. Each phrase includes an English-sound respelling for pronunciation. Open any card in Study view for large-text practice, or use the Quiz tab to test recall across specialties and directions.`),
+    line('', `There are ${formatCount(phrases)} phrases across ${formatCount(specialties.length)} specialties in ${formatCount(availableLanguages.length)} languages (${languageNames}). Translations with a Reviewed tag have been checked by a bilingual reviewer, and translations without a reviewer are drafts awaiting bilingual review.`)
+  );
   section.append(radialChart('Phrases per language', languages, 'language'),
     radialChart('Phrases per specialty', specialties, 'specialty'));
   const authors = document.createElement('h3');
@@ -494,7 +500,7 @@ function aboutPage() {
   sources.className = 'sources';
   sources.append(sourceArticle(data.sources[0]));
   section.append(authors, authorList, sourcesHeading,
-    line('', `mdlingo also keeps the Medical Questionnaire (${formatCount(data.sources[0].count)} phrases) as a backup. It is used only when a search finds no mdlingo match.`), sources);
+    line('', `medlingo also keeps the Medical Questionnaire (${formatCount(data.sources[0].count)} phrases) as a backup. It is used only when a search finds no medlingo match.`), sources);
   return section;
 }
 

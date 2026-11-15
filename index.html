@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
   <meta name="theme-color" content="#ffffff">
-  <title>mdlingo</title>
+  <title>medlingo</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles.css?v=20261112-devby">
   <script src="app.js?v=20261112-devby" defer></script>
@@ -26,21 +26,21 @@
   </header>
   <p class="review-banner" role="note">This website is under review.</p>
   <main>
-    <h1 id="page-heading" tabindex="-1">mdlingo</h1>
-    <p class="intro">Find a phrase. Show it to your patient.</p>
+    <h1 id="page-heading" tabindex="-1">medlingo</h1>
+    <p class="intro">Learn medical phrases to speak with patients in their language.</p>
     <div class="search-tools">
       <div id="language-home"></div>
       <div id="language-control">
-        <label class="language-label" for="language">Patient language</label>
+        <label class="language-label" for="language">Language</label>
         <div class="language-combo">
           <input id="language" role="combobox" aria-autocomplete="list" aria-expanded="false"
             aria-controls="language-options" autocomplete="off" spellcheck="false">
-          <ul id="language-options" role="listbox" aria-label="Patient languages" hidden></ul>
+          <ul id="language-options" role="listbox" aria-label="Languages" hidden></ul>
         </div>
       </div>
       <form id="search-form" role="search">
         <label class="search-label" for="search">Find a question or instruction</label>
-        <input id="search" type="search" placeholder="Search English or patient language…" autocomplete="off">
+        <input id="search" type="search" placeholder="Search English or translation…" autocomplete="off">
       </form>
     </div>
     <a id="back" class="button-link" href="#/quiz" hidden>← Quiz setup</a>
@@ -49,11 +49,10 @@
   </main>
   <footer>
     <p><span id="footer-authors"></span> <a class="button-link small" href="#/sources">Sources</a></p>
-    <p>Use a professional interpreter for history, consent and results.</p>
   </footer>
   <dialog id="fullscreen" aria-labelledby="large-translation">
     <div class="dialog-tools">
-      <span>Show your patient</span>
+      <span>Study view</span>
       <button id="smaller" aria-label="Decrease text size">A−</button>
       <button id="larger" aria-label="Increase text size">A+</button>
       <button id="close">Close ✕</button>
