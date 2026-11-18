@@ -8,3 +8,5 @@
 !/phrases.json
 !/lang/
 !/fallback/
+!/audio/
+audio/**/*.wav

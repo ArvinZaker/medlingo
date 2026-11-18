@@ -72,7 +72,64 @@ let activeLanguage = -1;
 const translations = {};
 const languageLoads = {};
 const fallbackLoads = {};
+const audioClips = new Map();
+let activeAudio = null;
+let activeAudioButton = null;
 let renderVersion = 0;
+
+function stopAudio() {
+  if (activeAudio) {
+    activeAudio.pause();
+    activeAudio.currentTime = 0;
+    activeAudio = null;
+  }
+  if (activeAudioButton) {
+    activeAudioButton.classList.remove('playing');
+    activeAudioButton.setAttribute('aria-pressed', 'false');
+    activeAudioButton = null;
+  }
+}
+
+function playAudio(url, button) {
+  stopAudio();
+  const audio = new Audio(url);
+  activeAudio = audio;
+  activeAudioButton = button;
+  button.classList.add('playing');
+  button.setAttribute('aria-pressed', 'true');
+  const clear = () => {
+    if (activeAudio === audio) stopAudio();
+  };
+  audio.addEventListener('ended', clear, { once: true });
+  audio.addEventListener('error', clear, { once: true });
+  audio.play().catch(clear);
+}
+
+function audioButton(phrase, code = language) {
+  if (!phrase?.id || phrase.source_id) return null;
+  const url = audioClips.get(`${code}:${phrase.id}`);
+  if (!url) return null;
+  const langName = data.languages.find(item => item.code === code)?.name || code;
+  const label = `Play ${langName} audio`;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'audio-button';
+  button.setAttribute('aria-label', label);
+  button.setAttribute('aria-pressed', 'false');
+  button.title = label;
+  const icon = svgElement('svg', { viewBox: '0 0 24 24', width: 18, height: 18, 'aria-hidden': 'true' });
+  icon.append(
+    svgElement('path', {
+      d: 'M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.49 4.49 0 0 0 16.5 12z',
+      fill: 'currentColor',
+    })
+  );
+  const text = document.createElement('span');
+  text.textContent = 'Listen';
+  button.append(icon, text);
+  button.addEventListener('click', () => playAudio(url, button));
+  return button;
+}
 
 function sourceTag(sourceId) {
   const source = data.sources.find(item => item.id === sourceId);
@@ -149,16 +206,18 @@ function openCard(p, button) {
   ).direction;
   $('large-translation').lang = language;
   $('large-translation').style.fontSize = (size / 16) + 'rem';
+  const largeAudio = $('large-audio');
+  largeAudio.replaceChildren();
+  const clip = audioButton(p);
+  largeAudio.hidden = !clip;
+  if (clip) largeAudio.append(clip);
   $('large-transliteration').textContent = t.transliteration || '';
   $('large-english').textContent = p.english;
   const source = data.sources.find(item => item.id === p.source_id);
   $('large-source').replaceChildren();
   $('large-source').hidden = !source;
   if (source) {
-    const pill = document.createElement('span');
-    pill.className = 'source-tag';
-    pill.textContent = source.tag;
-    $('large-source').append(pill);
+    $('large-source').append(sourceTag(p.source_id));
   }
   $('large-context').textContent = phraseContext(p);
   $('large-status').textContent = reviewLabel(t);
@@ -211,6 +270,8 @@ function card(p, words, state) {
   article.append(button);
   // Only outside sources get a tag; our own phrases have none.
   if (p.source_id) tags.append(sourceTag(p.source_id));
+  const clip = audioButton(p);
+  if (clip) tags.append(clip);
   article.append(tags);
   return article;
 }
@@ -244,6 +305,7 @@ function route() {
 
 async function render(focusHeading = false) {
   const state = route();
+  $('footer-authors').hidden = state.page === 'about';
   const activeTab = state.page.startsWith('quiz') ? '#/quiz'
     : state.page === 'about' ? '#/about' : '#/';
   for (const tab of document.querySelectorAll('.app-nav nav a')) {
@@ -466,27 +528,38 @@ async function selectPhrases(state, code) {
   return { phrases: matches(entries, state), fallback: true };
 }
 
+function aboutHeading(text) {
+  const heading = document.createElement('h3');
+  heading.textContent = text;
+  return heading;
+}
+
 function aboutPage() {
   const section = document.createElement('section');
   section.className = 'about';
-  const languages = availableLanguages.map(item => ({
-    name: item.name,
-    count: data.fields.reduce((total, field) => total + (data.own_counts[item.code]?.[field.id] || 0), 0),
-  }));
   const specialties = data.fields.map(item => ({
     name: item.title, count: data.specialty_counts[item.id] || 0,
   })).filter(item => item.count);
   const phrases = Object.values(data.specialty_counts).reduce((total, count) => total + count, 0);
-  const languageNames = availableLanguages.map(item => item.name).join(', ');
-  section.append(
-    line('', `medlingo is a language-learning tool for clinicians, built around medical phrases for speaking with patients in their own language. It is for students and clinicians who speak English or do not know the exact clinical terminology in another language.`),
-    line('', `Pick a language, browse clinical areas, or search in English, translation or pronunciation. Each phrase includes an English-sound respelling for pronunciation. Open any card in Study view for large-text practice, or use the Quiz tab to test recall across specialties and directions.`),
-    line('', `There are ${formatCount(phrases)} phrases across ${formatCount(specialties.length)} specialties in ${formatCount(availableLanguages.length)} languages (${languageNames}). Translations with a Reviewed tag have been checked by a bilingual reviewer, and translations without a reviewer are drafts awaiting bilingual review.`)
-  );
-  section.append(radialChart('Phrases per language', languages, 'language'),
-    radialChart('Phrases per specialty', specialties, 'specialty'));
-  const authors = document.createElement('h3');
-  authors.textContent = 'Developed by';
+  const steps = document.createElement('ol');
+  steps.className = 'about-list';
+  for (const text of [
+    'Pick a language.',
+    'Browse a clinical area or search in English, the translation or the pronunciation.',
+    'Open a card in Study view for large text.',
+    'Test yourself in the Quiz tab.',
+  ]) {
+    const item = document.createElement('li');
+    item.textContent = text;
+    steps.append(item);
+  }
+  const languageList = document.createElement('ul');
+  languageList.className = 'about-languages';
+  for (const item of availableLanguages) {
+    const li = document.createElement('li');
+    li.textContent = item.native_name === item.name ? item.native_name : `${item.native_name} (${item.name})`;
+    languageList.append(li);
+  }
   const authorList = document.createElement('ul');
   authorList.className = 'authors';
   for (const name of authorNames) {
@@ -494,13 +567,29 @@ function aboutPage() {
     author.textContent = name;
     authorList.append(author);
   }
-  const sourcesHeading = document.createElement('h3');
-  sourcesHeading.textContent = 'Sources';
   const sources = document.createElement('div');
   sources.className = 'sources';
   sources.append(sourceArticle(data.sources[0]));
-  section.append(authors, authorList, sourcesHeading,
-    line('', `medlingo also keeps the Medical Questionnaire (${formatCount(data.sources[0].count)} phrases) as a backup. It is used only when a search finds no medlingo match.`), sources);
+  section.append(
+    aboutHeading('What medlingo is'),
+    line('', 'medlingo is a language-learning tool for clinicians and students. It is built around medical phrases for speaking with patients in their own language.'),
+    aboutHeading('Who it is for'),
+    line('', 'It is for clinicians and students who speak English or do not yet know the exact terminology in another language.'),
+    aboutHeading('How to use it'),
+    steps,
+    aboutHeading('Languages'),
+    languageList,
+    aboutHeading('What is inside'),
+    line('', `There are ${formatCount(phrases)} phrases across ${formatCount(specialties.length)} specialties in ${formatCount(availableLanguages.length)} languages.`),
+    radialChart('Phrases per specialty', specialties, 'specialty'),
+    aboutHeading('How translations are reviewed'),
+    line('', 'A translation with a Reviewed tag has been checked by a bilingual reviewer, and the others are drafts awaiting bilingual review. Pronunciation is an English-sound respelling without a phonetic standard.'),
+    aboutHeading('Developed by'),
+    authorList,
+    aboutHeading('Sources'),
+    line('', 'medlingo also keeps the Medical Questionnaire as a backup when a search finds no medlingo match.'),
+    sources
+  );
   return section;
 }
 
@@ -871,16 +960,66 @@ $('theme').addEventListener('click', () => {
 systemTheme.addEventListener('change', applyTheme);
 applyTheme();
 
+function matchBrowserLanguage(tags = navigator.languages || []) {
+  const lookup = {
+    ar: 'ar',
+    fa: 'fa',
+    hi: 'hi',
+    ja: 'ja',
+    ko: 'ko',
+    pa: 'pa',
+    tl: 'tl',
+    fil: 'tl',
+    'fil-ph': 'tl',
+    vi: 'vi',
+    yue: 'yue',
+    'zh-hk': 'yue',
+    'zh-hant-hk': 'yue',
+    zh: 'zh',
+    'zh-cn': 'zh',
+    'zh-sg': 'zh',
+    'zh-tw': 'zh',
+    'zh-hans': 'zh',
+    'zh-hant': 'zh',
+    cmn: 'zh',
+  };
+  for (const raw of tags) {
+    const tag = String(raw || '').trim().toLowerCase().replace(/_/g, '-');
+    if (!tag) continue;
+    const primary = tag.split('-')[0];
+    if (primary === 'en') continue;
+    if (lookup[tag]) return lookup[tag];
+    if (lookup[primary]) return lookup[primary];
+  }
+  return '';
+}
+
 async function init() {
-  const response = await fetch('phrases.json');
+  const [response, manifestResponse] = await Promise.all([
+    fetch('phrases.json'),
+    fetch('audio/manifest.json').catch(() => null),
+  ]);
   if (!response.ok) throw new Error('Unable to load phrases');
   data = await response.json();
+  if (manifestResponse?.ok) {
+    try {
+      const manifest = await manifestResponse.json();
+      if (Array.isArray(manifest)) {
+        for (const entry of manifest) {
+          if (!entry?.id || !entry?.lang || !entry?.file) continue;
+          audioClips.set(`${entry.lang}:${entry.id}`, entry.file.replace(/\.wav$/i, '.m4a'));
+        }
+      }
+    } catch {
+      // Ignore malformed audio manifest so phrases still load.
+    }
+  }
 
   availableLanguages = data.languages.filter(item => {
     const counts = data.own_counts[item.code];
     return counts && Object.values(counts).some(value => value > 0);
   }).sort((a, b) => a.name.localeCompare(b.name, 'en'));
-  language = saved('language', availableLanguages[0].code);
+  language = saved('language', '') || matchBrowserLanguage() || availableLanguages[0].code;
   if (!availableLanguages.some(item => item.code === language)) language = availableLanguages[0].code;
   indexed = {};
   phraseQuery = route().q || saved('phraseQuery', '');
@@ -897,7 +1036,10 @@ async function init() {
 }
 
 $('close').addEventListener('click', () => $('fullscreen').close());
-$('fullscreen').addEventListener('close', () => focusProgrammatically(opener));
+$('fullscreen').addEventListener('close', () => {
+  if (activeAudioButton && $('fullscreen').contains(activeAudioButton)) stopAudio();
+  focusProgrammatically(opener);
+});
 for (const [id, delta] of [['smaller', -8], ['larger', 8]]) {
   $(id).addEventListener('click', () => {
     size = Math.max(24, Math.min(144, size + delta));
@@ -1112,6 +1254,10 @@ function renderQuiz() {
     prompt.lang = quizEnglishPrompt ? 'en' : language;
     prompt.dir = quizEnglishPrompt ? 'ltr' : data.languages.find(l => l.code === language).direction;
     section.append(prompt);
+    if (!quizEnglishPrompt) {
+      const clip = audioButton(phrase);
+      if (clip) section.append(clip);
+    }
     if (!quizEnglishPrompt && phrase.transliteration) {
       const pronunciation = line('transliteration', phrase.transliteration);
       pronunciation.dir = 'ltr';
@@ -1149,7 +1295,8 @@ function renderQuiz() {
     });
     section.append(choices);
     if (round.answered) {
-      const next = quizButton(round.index === 9 ? 'See results (Enter)' : 'Next (Enter)', nextQuiz);
+      const next = quizButton(round.index === 9 ? 'Results' : 'Next', nextQuiz);
+      next.title = 'Press Enter to continue';
       next.id = 'quiz-next';
       section.append(next);
     }

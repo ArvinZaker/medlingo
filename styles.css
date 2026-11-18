@@ -277,7 +277,7 @@ main {
 }
 
 main > :not(#results), #results > :not(.areas):not(.cards):not(.about),
-.about > p, .about > h3, .about > .sources, .about > .authors,
+.about > p, .about > h3, .about > ol, .about > ul, .about > .sources, .about > .authors,
 .radial-chart > h3, .radial-chart > .view-tabs {
   width: 100%;
   max-width: var(--column);
@@ -475,15 +475,14 @@ main > :not(#results), #results > :not(.areas):not(.cards):not(.about),
   display: inline-flex;
   align-items: center;
   margin: 0;
-  padding: .2rem .65rem;
-  border: 1px solid var(--border);
+  padding: .2rem .75rem;
+  border: 1px solid var(--link);
   gap: .3rem;
-  border-radius: 6px;
+  border-radius: 9999px;
   color: var(--link);
-  border-color: var(--link);
   background: var(--hover);
   font-size: .8rem;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.5;
 }
 
@@ -926,6 +925,18 @@ body:has(dialog[open]) {
   margin-top: .75rem;
 }
 
+.about > ol, .about > ul:not(.authors) {
+  margin: 0 auto;
+  padding-inline-start: 1.5rem;
+  text-align: start;
+}
+
+.about > .about-languages {
+  list-style: none;
+  padding: 0;
+  text-align: center;
+}
+
 .authors {
   list-style: none;
   padding: 0;
@@ -944,6 +955,10 @@ body:has(dialog[open]) {
 .about > h3 {
   margin-top: 1.5rem;
   margin-bottom: .5rem;
+}
+
+.about > h3:first-child {
+  margin-top: 0;
 }
 
 .radial-svg {
@@ -1190,4 +1205,41 @@ a.button-link.small {
   color: var(--text);
   text-align: center;
   font-weight: 600;
+}
+
+.audio-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  min-width: 40px;
+  min-height: 40px;
+  padding: .4rem .85rem;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: .9rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.audio-button svg {
+  flex: 0 0 auto;
+}
+
+.audio-button.playing,
+.audio-button.playing:hover:not(:disabled) {
+  color: var(--primary-text);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+#large-audio {
+  display: flex;
+  justify-content: center;
+}
+
+.quiz .audio-button {
+  margin-bottom: 1rem;
 }
